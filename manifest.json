@@ -1,0 +1,15 @@
+{
+  "name": "Pocket Pulse",
+  "short_name": "Pocket Pulse",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=192&h=192&fit=crop",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

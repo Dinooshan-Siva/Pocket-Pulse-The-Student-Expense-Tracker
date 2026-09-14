@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pocket Pulse - Student Expense Tracker</title>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pocket Pulse - Student Expense Tracker</title>
+
+  <!-- PWA App Manifest Link -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#030712" />
+
+  <!-- External Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Firebase Web SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- Intro Screen -->
+  <div class="screen" id="introScreen">
+    <div class="intro-logo">⚡</div>
+    <h1 class="intro-title">Pocket Pulse</h1>
+    <p class="intro-subtitle">Track your daily meal allowances, analyze expenditure patterns, and stay within budget effortlessly.</p>
+    <button class="btn-start" onclick="goToAuth()">Get Started</button>
+  </div>
+
+  <!-- Auth Screen -->
+  <div class="screen hidden" id="authScreen">
+    <div class="vector-card">
+      <h2 id="vectorCardTitle">Sign In</h2>
+
+      <div class="auth-error-msg" id="authErrorMsg"></div>
+
+      <form id="vectorAuthForm" onsubmit="handleAuthSubmit(event)">
+        <div class="vector-input-wrap" id="wrapVectorName" style="display: none;">
+          <span class="vector-input-icon">👤</span>
+          <input type="text" id="vectorInputName" class="vector-input" placeholder="Your Name" />
+        </div>
+
+        <div class="vector-input-wrap" id="wrapVectorEmail">
+          <span class="vector-input-icon">✉️</span>
+          <input type="email" id="vectorInputEmail" class="vector-input" placeholder="E-mail" required />
+        </div>
+
+        <div class="vector-input-wrap">
+          <span class="vector-input-icon">🔒</span>
+          <input type="password" id="vectorInputPassword" class="vector-input" placeholder="Password" required />
+        </div>
+
+        <div class="vector-btn-group">
+          <button type="submit" class="btn-vector-primary" id="btnVectorPrimary">SIGN IN</button>
+          <button type="button" class="btn-vector-secondary" id="btnVectorSecondary" onclick="toggleAuthMode()">SIGN UP</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main App Layout with Responsive Navigation -->
+  <div class="app-container app" id="appMain">
+    
+    <!-- Sidebar / Mobile Header -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <div class="logo">⚡</div>
+          <div class="brand-text">
+            <h2>Pocket Pulse</h2>
+            <span id="activeMonthPill">ONLINE</span>
+          </div>
+        </div>
+        <!-- Mobile Navigation Toggle Button -->
+        <button class="mobile-menu-toggle" id="menuToggleBtn" onclick="toggleMobileMenu()">☰</button>
+      </div>
+
+      <div class="sidebar-menu-wrapper" id="sidebarMenu">
+        <nav class="sidebar-nav">
+          <div class="nav-item active" data-section="dashboardSection">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Overview</span>
+          </div>
+
+          <div class="nav-item" data-section="allocationSection">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Set Allocations</span>
+          </div>
+
+          <div class="nav-item" data-section="actionSection">
+            <span class="nav-icon">➕</span>
+            <span class="nav-label">Add Expense</span>
+          </div>
+
+          <div class="nav-item" data-section="todayLogsSection">
+            <span class="nav-icon">🕒</span>
+            <span class="nav-label">Today's Monitor</span>
+          </div>
+
+          <div class="nav-item" data-section="summaryLogsSection">
+            <span class="nav-icon">📅</span>
+            <span class="nav-label">Summary Ledger</span>
+          </div>
+        </nav>
+
+        <button onclick="logoutUser()" class="btn-logout">
+          <span>🚪</span>
+          <span>Logout Account</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Body -->
+    <main class="main-content">
+      
+      <!-- Top Header Profile Placement -->
+      <header class="top-header">
+        <div class="top-profile">
+          <div class="profile-avatar" id="avatarInitial">D</div>
+          <div class="profile-info">
+            <small id="timeGreeting">GOOD EVENING</small>
+            <span id="displayUserName">User</span>
+          </div>
+        </div>
+      </header>
+      
+      <section class="hero" id="dashboardSection">
+        <div class="panel status-panel">
+          <p class="status-label">Remaining Balance</p>
+
+          <div class="status-row">
+            <div>
+              <div class="status-text" id="remainingBalanceText">Rs. 0.00</div>
+              <p style="color: var(--text-subtle); margin-top: 8px;" id="balanceSubtext">
+                Calculated dynamically after logged expenses.
+              </p>
+            </div>
+
+            <div class="status-chip" id="budgetStatusChip">HEALTHY</div>
+          </div>
+
+          <div class="battery-wrap">
+            <div class="battery-head">
+              <span>Budget Remaining Ratio</span>
+              <span id="budgetRatioText" style="font-weight: 600;">100%</span>
+            </div>
+
+            <div class="battery">
+              <div class="battery-level" id="budgetLevelBar"></div>
+            </div>
+          </div>
+
+          <!-- Financial Summary Grid Under Progress Bar -->
+          <div class="balance-stats-grid">
+            <div class="stat-card">
+              <small>Total Pool Budget</small>
+              <span id="statTotalBudget">Rs. 25000.00</span>
+            </div>
+
+            <div class="stat-card">
+              <small>Added Injections</small>
+              <span id="statAddedFunds">Rs. 0.00</span>
+            </div>
+
+            <div class="stat-card">
+              <small>Recommended Daily Limit</small>
+              <span id="statDailyAvg">Rs. 0.00/day</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel soh-panel" id="allocationSection">
+          <p class="status-label">Monthly Allocations</p>
+          
+          <div class="form-group" style="margin-top: 14px;">
+            <label>Total Monthly Budget (Rs.)</label>
+            <input type="number" id="monthlyBudgetInput" class="form-control" value="25000" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Breakfast (Rs.)</label>
+              <input type="number" id="defaultBreakfast" class="form-control" value="150" />
+            </div>
+            <div class="form-group">
+              <label>Lunch (Rs.)</label>
+              <input type="number" id="defaultLunch" class="form-control" value="250" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Dinner (Rs.)</label>
+            <input type="number" id="defaultDinner" class="form-control" value="200" />
+          </div>
+
+          <button class="btn" id="updateBudgetBtn" onclick="updateAllocations()">Update Budget Setup</button>
+
+          <!-- Add Additional Money Section -->
+          <div class="form-group" style="margin-top: 20px; border-top: 1px solid var(--panel-border); padding-top: 16px;">
+            <label>Add Additional Funds (Rs.)</label>
+            <input type="number" id="additionalMoneyInput" class="form-control" placeholder="e.g. 5000" />
+          </div>
+          <button class="btn" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="addAdditionalMoney()">
+            + Add Funds to Balance
+          </button>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="panel metric">
+          <div class="metric-top">
+            <small>Total Spent (Month)</small>
+            <div class="metric-icon">💳</div>
+          </div>
+          <div class="metric-value" id="totalSpentText"><span>Rs.</span>0</div>
+          <div class="mini-bar">
+            <div class="mini-fill" id="spentMiniBar" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="panel metric">
+          <div class="metric-top">
+            <small>Today's Total Spent</small>
+            <div class="metric-icon">🍲</div>
+          </div>
+          <div class="metric-value" id="todaySpentText"><span>Rs.</span>0</div>
+          <div class="mini-bar">
+            <div class="mini-fill" id="todayMiniBar" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="panel metric">
+          <div class="metric-top">
+            <small>Other Expenses</small>
+            <div class="metric-icon">📦</div>
+          </div>
+          <div class="metric-value" id="otherSpentText"><span>Rs.</span>0</div>
+          <div class="mini-bar">
+            <div class="mini-fill" id="otherMiniBar" style="width: 0%;"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bottom" id="actionSection">
+        <div class="panel chart-panel">
+          <div class="section-head">
+            <h3>Expense Breakdown</h3>
+            <span>Category overview</span>
+          </div>
+          <canvas id="expenseChart" height="120"></canvas>
+        </div>
+
+        <div class="panel log-panel">
+          <div class="section-head">
+            <h3>Log Expense</h3>
+            <span>Daily Tracker</span>
+          </div>
+
+          <div class="form-group">
+            <label>Expense Type</label>
+            <select id="expenseTypeSelect" class="form-control" onchange="toggleMealOptions()">
+              <option value="Breakfast">Routine Breakfast</option>
+              <option value="Lunch">Routine Lunch</option>
+              <option value="Dinner">Routine Dinner</option>
+              <option value="Other">Other Expense</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Description / Name</label>
+            <input type="text" id="expenseNameInput" class="form-control" value="Morning Breakfast" />
+          </div>
+
+          <div class="form-group">
+            <label>Amount (Rs.)</label>
+            <input type="number" id="expenseAmountInput" class="form-control" value="150" />
+          </div>
+
+          <button class="btn" onclick="addExpense()">Deduct & Log Expense</button>
+          <button class="btn btn-danger" style="margin-top: 10px;" onclick="endDayRoutine()">Complete & End Day</button>
+        </div>
+      </section>
+
+      <section class="panel history-panel" id="todayLogsSection">
+        <div class="section-head">
+          <div>
+            <h3>1. Today's Active Expense Monitor</h3>
+            <p style="color: var(--text-subtle); font-size: 14px; margin-top: 4px;">Live meal/other transactions logged today. Resets after ending the day.</p>
+          </div>
+          <span style="color: var(--status-green);">Resets Daily</span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount (Rs.)</th>
+                <th>Remaining Balance</th>
+              </tr>
+            </thead>
+            <tbody id="todayLedgerTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel history-panel" id="summaryLogsSection">
+        <div class="section-head">
+          <div>
+            <h3>2. Day-by-Day Historical Summary Ledger</h3>
+            <p style="color: var(--text-subtle); font-size: 14px; margin-top: 4px;">Permanent record of daily closed totals. Does not reset.</p>
+          </div>
+          <span style="color: var(--accent-cyan);">Permanent Record</span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Daily Total Spent (Rs.)</th>
+                <th>End-of-Day Remaining Balance</th>
+              </tr>
+            </thead>
+            <tbody id="summaryLedgerTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer>
+        Pocket Pulse - University Student Expense Tracker
+      </footer>
+    </main>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
